@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  vocalvibe:
+    image: ghcr.io/pioneering-the-future/vocalvibe-api/vocalvibe-api:v1.0.0
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env
+    network_mode: "host"
