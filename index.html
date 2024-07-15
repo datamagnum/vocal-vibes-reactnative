@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Genie</title>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+<style>
+  body {
+    background-color: #292929;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+
+  h1 {
+    color: #00bcd4;
+  }
+
+  textarea, button {
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: none;
+    padding: 10px;
+    font-size: 16px;
+  }
+
+  textarea {
+    width: calc(100% - 20px);
+    resize: none;
+    background-color: #424242;
+    color: #fff;
+  }
+
+  button {
+    background-color: #00bcd4;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  #responseDiv {
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #424242;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+  <h1>Ollama POC</h1>
+  <textarea id="inputText" rows="4" cols="50"></textarea><br>
+  <button onclick="sendRequest()">Submit</button><br><br>
+  <span id="response" style="display:block" class="note" markdown="1"></span>
+  <script>
+    async function sendRequest() {
+      var inputText = document.getElementById("inputText").value;
+      try {
+        const response = await fetch('http://localhost:11434/api/generate', {
+          method: 'POST',
+          body: JSON.stringify({
+            model: 'llama3',
+            prompt: inputText
+          }),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const reader = response.body.getReader();
+        const responseDiv = document.getElementById("response");
+        responseDiv.innerHTML = ''; // Clear previous responses
+
+        const md = window.markdownit();
+        let data = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const responseText = new TextDecoder().decode(value);
+          try {
+            const responseObject = JSON.parse(responseText);
+            const responseHtml = responseObject.response.replace(/(?:\r\n|\r|\n)/g, '<br>')
+            responseDiv.innerHTML += responseHtml
+            if (responseObject.done) {
+                responseDiv.innerHTML = md.render(responseDiv.innerText);
+                break;
+            }
+          } catch (error) {
+            console.error(error);
+            break;
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+  </script>
+</body>
+</html>
